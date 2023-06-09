@@ -79,7 +79,7 @@ screen.Push()
 ```
 Below is a complete example of an "Underwater World" where the output of three images is implemented: seaweed (static without transparency), bubble (moving with transparency), and fish (animated with transparency).
 
-```
+```python
 import random
 
 # class WBScreen:
