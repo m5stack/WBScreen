@@ -1,6 +1,6 @@
 # Class WBScreen for M5Stack UIFlow 1.0
 
-![https://github.com/m5stack/WBScreen/blob/main/cover.jpg?raw=true](Cover)
+![Cover](https://github.com/m5stack/WBScreen/blob/main/cover.jpg?raw=true)
 
 ## Introduction
 
