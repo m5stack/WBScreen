@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Despite the existence of high-tech displays with very high resolution, rich color palettes, and high refresh rates, monochrome displays remain popular among both professionals and beginners. There are two obvious advantages to note - one technological and the other visual.
+Despite the existence of high-tech displays with very high resolution, rich color palettes, and high refresh rates, monochrome displays remain popular among both professionals and beginners. There are two obvious advantages to note – one technological and the other visual.
 
 The technology of monochrome LCD involves changing the orientation of liquid crystals under the influence of an electric charge and reflecting the light flux from a reflective film on the back. Thus, these displays provide high readability in bright lighting conditions and do not require backlighting during daylight hours. Unfortunately, this advantage does not extend to the built-in display in the M5Stack, which is made using IPS technology.
 
@@ -47,21 +47,21 @@ class WBScreen:
 
 The `WBScreen` class provides the following methods:
 
-- `__init__(palette: int = 0, screenWidth: int = 320, screenHeight: int = 240, width: int = 84, height: int = 48, dotSize: int = 2, dotSpacing: int = 1)`: the class constructor initializes an instance of `WBScreen` with optional parameters;
+- `__init__(palette: int = 0, screenWidth: int = 320, screenHeight: int = 240, width: int = 84, height: int = 48, dotSize: int = 2, dotSpacing: int = 1)`: The class constructor initializes an instance of `WBScreen` with optional parameters
 
-- `Clear()`: it clears the virtual screen buffer by filling it with the background color from the selected palette;
+- `Clear()`: It clears the virtual screen buffer by filling it with the background color from the selected palette
 
-- `Push()`: it sends the content of the virtual screen buffer to the physical display;
+- `Push()`: It sends the content of the virtual screen buffer to the physical display
 
-- `Pixel(x: int, y: int, value: int, width: int, destination: ptr8)`: it colors a pixel in the 565 buffer;
+- `Pixel(x: int, y: int, value: int, width: int, destination: ptr8)`: It colors a pixel in the 565 buffer
 
-- `Dot(x: int, y: int, value: int, width: int, destination: ptr8`): it colors a pixel in the virtual screen buffer;
+- `Dot(x: int, y: int, value: int, width: int, destination: ptr8`): it colors a pixel in the virtual screen buffer
 
-- `Sprite(width: int, height: int, content: ptr8)`: it creates a sprite from RAW WBMP image data;
+- `Sprite(width: int, height: int, content: ptr8)`: It creates a sprite from RAW WBMP image data
 
-- `Slice(source: ptr8, sourceIndex: int, sourceWidthX2: int, destination: ptr8, destinationIndex: int, transparencyMode: int)`: it copies a portion of the image from the source 565 buffer and pastes it into the target 565 buffer with a specified transparency mode;
+- `Slice(source: ptr8, sourceIndex: int, sourceWidthX2: int, destination: ptr8, destinationIndex: int, transparencyMode: int)`: It copies a portion of the image from the source 565 buffer and pastes it into the target 565 buffer with a specified transparency mode
 
-- `Select(x: int, y: int, sprite, transparencyMode: int = 0x00)`: it places a sprite on the screen at a specified position with a specified transparency mode.
+- `Select(x: int, y: int, sprite, transparencyMode: int = 0x00)`: It places a sprite on the screen at a specified position with a specified transparency mode
 
 ## Examples
 
