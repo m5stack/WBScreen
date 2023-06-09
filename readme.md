@@ -30,7 +30,7 @@ This class is designed to create a virtual monochrome screen in the UIFlow devel
 
 Copy the contents of the `WBScreen.py` file into the code editor (Python tab) in [UIFlow](https://flow.m5stack.com), as shown in the example below:
 
-```
+```python
 from m5stack import *
 from m5ui import *
 from uiflow import *
