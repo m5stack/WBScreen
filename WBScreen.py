@@ -1,4 +1,16 @@
 class WBScreen:
+  palettes = [
+    # [byte1, byte0] for 'black', 'white', 'backlight'
+    [[0x00, 0x00], [0x18, 0xe3], [0x21, 0x03]], # "LCD backlight OFF"
+    [[0x00, 0x00], [0x6b, 0xac], [0x73, 0xed]], # white
+    [[0x00, 0x00], [0x5c, 0xa6], [0x64, 0xe6]], # green
+    [[0x00, 0x00], [0x22, 0x56], [0x22, 0x77]], # blue
+    [[0x00, 0x00], [0xab, 0x44], [0xB3, 0x84]], # orange
+    [[0xff, 0xff], [0x00, 0x00], [0x00, 0x00]], # white OLED style
+    [[0x7f, 0xdf], [0x00, 0x00], [0x00, 0x00]], # blue OLED style
+    [[0xff, 0xa0], [0x00, 0x00], [0x00, 0x00]]  # yellow OLED style
+  ]
+
   dSiSp: int
   dSiSpWindowWidthX2: int
   dSiSpX2: int
@@ -7,29 +19,21 @@ class WBScreen:
   height: int
   hSpacing: int
   palette: int
-  palettes = [
-    # [byte1, byte0] for 'black', 'white', backlight
-    [[0x00, 0x00], [0x18, 0xe3], [0x21, 0x03]], # "LCD backlight OFF"
-    [[0x00, 0x00], [0x6b, 0xac], [0x73, 0xed]], # white
-    [[0x00, 0x00], [0x5c, 0xa6], [0x64, 0xe6]], # green
-    [[0x00, 0x00], [0x22, 0x56], [0x22, 0x77]], # blue
-    [[0x00, 0x00], [0xab, 0x44], [0xB3, 0x84]]  # orange
-  ]
   screenHeight: int
   screenWidth: int
   vSpacing: int
   width: int
-  window: None
-  windowBlank = None
+  window: ptr8 = None
+  windowBlank: ptr8 = None
   windowLength: int
   windowLengthX2: int
   windowWidth: int
   windowWidthX2: int
   windowX0 = [int, int]
-  windowX01 = None
+  windowX01: ptr8 = None
   windowX1 = [int, int]
   windowY0 = [int, int]
-  windowY01 = None
+  windowY01: ptr8 = None
   windowY1 = [int, int]
 
   def __init__(self, palette: int = 0, screenWidth: int = 320, screenHeight: int = 240, width: int = 84, height: int = 48, dotSize: int = 2, dotSpacing: int = 1):
@@ -123,8 +127,16 @@ class WBScreen:
     destination[index] = self.palettes[self.palette][value][0]
     destination[index + 1] = self.palettes[self.palette][value][1]
 
+  def GetPixel(self, x: int, y: int, width: int, destination: ptr8):
+    index = (width * y + x) * 2
+
+    return [destination[index], destination[index + 1]]
+
+  def Dot(self, x: int, y: int, value: int):
+    self.Dot(x, y, value, self.width, self.window)
+
   def Dot(self, x: int, y: int, value: int, width: int, destination: ptr8):
-    width = self.dSiSp * width
+    width *= self.dSiSp
 
     nx: int = self.dSiSp * x
     ny: int = self.dSiSp * y
@@ -133,10 +145,18 @@ class WBScreen:
       for j in range(self.dotSize):
         self.Pixel(nx + j, ny + i, value, width, destination)
 
-  def Sprite(self, width: int, height: int, content: ptr8):
+  def GetDot(self, x: int, y: int, width: int, destination: ptr8):
+    width *= self.dSiSp
+
+    nx: int = self.dSiSp * x
+    ny: int = self.dSiSp * y
+
+    return self.GetPixel(nx, ny, width, destination)
+
+  def Sprite(self, width: int, height: int, content: ptr8, transparencyPoint: [int, int] = None):
     spriteWidth: int = self.dSiSp * width
     spriteHeight: int = self.dSiSp * height
-    spriteContent = bytearray(self.palettes[self.palette][2] * (spriteWidth * spriteHeight * 2))
+    spriteContent: ptr8 = bytearray(self.palettes[self.palette][2] * (spriteWidth * spriteHeight * 2))
 
     usefulBits: int = 8 if width > 8 else width
 
@@ -149,48 +169,55 @@ class WBScreen:
 
         self.Dot(x, y, value, width, spriteContent)
 
+    transparencyMode: int
+
+    if transparencyPoint == None:
+      transparencyMode = 0x00
+
+    elif transparencyPoint == [-1, -1]:
+      transparencyMode = 0x11
+
+    else:
+      transparencyMode = 0x01
+      self.Transparency(transparencyPoint[0], transparencyPoint[1], width, height, spriteContent)
+
     spriteWidth -= 1
     spriteHeight -= 1
 
-    X1 = [spriteWidth & 0xFF, (spriteWidth >> 8) & 0xFF]
-    Y1 = [spriteHeight & 0xFF, (spriteHeight >> 8) & 0xFF]
-
-    return x, y, spriteWidth + 1, spriteHeight + 1, spriteContent
+    return spriteWidth + 1, spriteHeight + 1, spriteContent, transparencyMode
 
   @micropython.native
   def Slice(self, source: ptr8, sourceIndex: int, sourceWidthX2: int, destination: ptr8, destinationIndex: int, transparencyMode: int):
     sourceSlice = memoryview(source)[sourceIndex:sourceIndex + sourceWidthX2]
     destinationSlice = memoryview(destination)[destinationIndex:destinationIndex + sourceWidthX2]
 
-    # Image without transparency
     if transparencyMode == 0x00:
       destinationSlice[:] = sourceSlice
 
-    # Unfilled pixels inside the image's outline are transparent
-    elif transparencyMode ==  0x01:
-      pass
-
-    # Unfilled pixels outside the image's outline are transparent
-    elif transparencyMode == 0x10:
-      pass
-
-    # Unfilled pixels of the image are transparent
-    else:
-      for bytePair in range(sourceWidthX2 // 2):
-        byte1st = bytePair * 2
+    elif transparencyMode == 0x11:
+      for byteCouple in range(sourceWidthX2 // 2):
+        byte1st = byteCouple * 2
         byte2nd = byte1st + 1
 
         if sourceSlice[byte1st] == 0x00 and sourceSlice[byte2nd] == 0x00:
-          destinationSlice[byte1st] = 0x00
-          destinationSlice[byte2nd] = 0x00
+            destinationSlice[byte1st] = 0x00
+            destinationSlice[byte2nd] = 0x00
+
+    else:
+      for byteCouple in range(sourceWidthX2 // 2):
+        byte1st = byteCouple * 2
+        byte2nd = byte1st + 1
+
+        if sourceSlice[byte1st] != self.palettes[self.palette][2][0] and sourceSlice[byte2nd] != self.palettes[self.palette][2][1]:
+          destinationSlice[byte1st] = sourceSlice[byte1st]
+          destinationSlice[byte2nd] = sourceSlice[byte2nd]
 
   @micropython.native
-  def Select(self, x: int, y: int, sprite, transparencyMode: int = 0x00):
-    lastX: int = sprite[0]
-    lastY: int = sprite[1]
-    width: int = sprite[2]
-    height: int = sprite[3]
-    content565: ptr8 = sprite[4]
+  def Select(self, x: int, y: int, sprite):
+    width: int = sprite[0]
+    height: int = sprite[1]
+    content565: ptr8 = sprite[2]
+    transparencyMode: int = sprite[3]
 
     sourceWidthX2: int = width * 2
 
@@ -202,3 +229,35 @@ class WBScreen:
       destinationIndex += y * self.dSiSpWindowWidthX2
 
       self.Slice(content565, sourceIndex, sourceWidthX2, self.window, destinationIndex, transparencyMode)
+
+  def Transparency(self, x: int, y: int, width: int, height: int, destination: ptr8):
+    startColor = self.GetDot(x, y, width, destination)
+
+    if startColor == self.palettes[self.palette][2]:
+      return
+
+    stack = [(x, y)]
+
+    while stack:
+      currentX, currentY = stack.pop()
+
+      currentColor = self.GetDot(currentX, currentY, width, destination)
+
+      if currentColor == self.palettes[self.palette][2]:
+        continue
+
+      self.Dot(currentX, currentY, 2, width, destination)
+
+      neighborsDots = [
+        (currentX, currentY - 1),
+        (currentX, currentY + 1),
+        (currentX - 1, currentY),
+        (currentX + 1, currentY)
+      ]
+
+      for neighborX, neighborY in neighborsDots:
+        if neighborX >= 0 and neighborX < width and neighborY >= 0 and neighborY < height:
+          neighborColor = self.GetDot(neighborX, neighborY, width, destination)
+
+          if neighborColor == startColor:
+            stack.append((neighborX, neighborY))
