@@ -199,9 +199,9 @@ class WBScreen:
         byte1st = byteCouple * 2
         byte2nd = byte1st + 1
 
-        if sourceSlice[byte1st] == 0x00 and sourceSlice[byte2nd] == 0x00:
-            destinationSlice[byte1st] = 0x00
-            destinationSlice[byte2nd] = 0x00
+        if sourceSlice[byte1st] == self.palettes[self.palette][0][0] and sourceSlice[byte2nd] == self.palettes[self.palette][0][1]:
+          destinationSlice[byte1st] = self.palettes[self.palette][0][0]
+          destinationSlice[byte2nd] = self.palettes[self.palette][0][1]
 
     else:
       for byteCouple in range(sourceWidthX2 // 2):
