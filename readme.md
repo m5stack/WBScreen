@@ -16,13 +16,11 @@ This class is designed to create a virtual monochrome screen in the UIFlow devel
 
 * Excellent compatibility with UIFlow
 * Easy connection and ease of use
-* Multiple palettes available, including "LCD backlight off," white, green (Nokia style), blue (Samsung style), and orange (Siemens style)
+* Multiple palettes are available, including "LCD backlight off," white, green (Nokia style), blue (Samsung style), orange (Siemens style), as well as OLED-style screen colors such as white, blue, and yellow
 * Fast sprite rendering
-* Four transparency modes: opaque, transparent inside the contour, transparent outside the contour, fully transparent
+* Three transparency modes: opaque, fully transparent and transparent region relative to a specified point
 * Creating sprites from RAW bytes of WBMP images
 * No flickering during frame updates
-
-> Note: Complex transparency modes (0x01, 0x10) will be implemented later. You can help with this.
 
 ## Installation
 
@@ -41,7 +39,13 @@ class WBScreen:
 	
 ### Blockly
 
-> Note: This feature will be added soon.
+To connect the Blockly set, follow these steps:
+
+1. Download the `WBScreen.m5b` file to your computer
+2. Open [UIFlow](https://flow.m5stack.com)
+3. In the `Custom` tab, select `Open *.m5b file`
+4. Choose the downloaded file
+5. Check the `Custom` tab again, the `WBScreen` section should now appear
 
 ## Usage
 
@@ -55,13 +59,15 @@ The `WBScreen` class provides the following methods:
 
 - `Pixel(x: int, y: int, value: int, width: int, destination: ptr8)`: It colors a pixel in the 565 buffer
 
-- `Dot(x: int, y: int, value: int, width: int, destination: ptr8`): it colors a pixel in the virtual screen buffer
+- `Dot(x: int, y: int, value: int`): It colors a pixel in the virtual screen buffer
 
-- `Sprite(width: int, height: int, content: ptr8)`: It creates a sprite from RAW WBMP image data
+- `Sprite(width: int, height: int, content: ptr8, transparencyPoint: [int, int] = None)`: It creates a sprite from RAW WBMP image data. The argument `transparencyPoint` is an optional parameter used to determine the transparency mode. By default, if the value is `None`, it will be interpreted as no transparency. If the value is `[-1, -1]`, the sprite will be completely transparent. To enable the third transparency mode using the fill method, you can pass the coordinates of the origin point, for example, [0, 0]. This will make the space around the image transparent while keeping the inside opaque.
 
 - `Slice(source: ptr8, sourceIndex: int, sourceWidthX2: int, destination: ptr8, destinationIndex: int, transparencyMode: int)`: It copies a portion of the image from the source 565 buffer and pastes it into the target 565 buffer with a specified transparency mode
 
-- `Select(x: int, y: int, sprite, transparencyMode: int = 0x00)`: It places a sprite on the screen at a specified position with a specified transparency mode
+- `Select(x: int, y: int, sprite)`: It places a sprite on the screen at a specified position
+
+- `Transparency(x: int, y: int, width: int, height: int, destination: ptr8)`: It fills the 565 buffer with a background color that will be interpreted as transparent
 
 ## Examples
 
@@ -72,7 +78,7 @@ Below is a simple example of adding a point to the virtual screen:
 screen = WBScreen(palette = 1)
 
 # Drawing a point in the virtual screen buffer
-screen.Dot(10, 10, 0b0, screen.width, screen.window)
+screen.Dot(10, 10, 0b0)
 
 # Outputting the contents of the virtual screen buffer to the physical screen
 screen.Push()
@@ -103,18 +109,18 @@ fish = [bytearray([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0x3F, 0xFC, 0x7F, 0
 seaweedSprite = screen.Sprite(6, 32, seaweed)
 
 # Creating a sprite for bubble
-bubbleSprite = screen.Sprite(16, 16, bubble)
+bubbleSprite = screen.Sprite(16, 16, bubble, [-1, -1])
 
 # Creating a sprite for fish
-fishSprites = [screen.Sprite(16, 16, fish[0]), screen.Sprite(16, 16, fish[1])]
+fishSprites = [screen.Sprite(16, 16, fish[0], [0, 0]), screen.Sprite(16, 16, fish[1], [0, 0])]
 
 while True:
   for i in range(24, 48):
     # Copying the seaweed sprite to the virtual screen buffer
-    screen.Select(15, 16, seaweedSprite, 0x00)
+    screen.Select(15, 16, seaweedSprite)
     
     # Copying the bubble sprite to the virtual screen buffer
-    screen.Select(10 + random.randint(-1, 1), -i, bubbleSprite, 0x11)
+    screen.Select(10 + random.randint(-1, 1), -i, bubbleSprite)
     
     if i % 2 == 0:
       # Copying the 0th fish sprite to the virtual screen buffer
